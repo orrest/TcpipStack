@@ -1,17 +1,21 @@
-﻿using System.Net;
+﻿using Bogus;
+using System.Net;
 
 namespace TcpipStack.Models;
 
-internal record Interface(string Name, Device Owner)
+/// <summary>
+/// A network interface attached to a device.
+/// </summary>
+/// <param name="Name"></param>
+/// <param name="Owner">The device.</param>
+/// <param name="IPAddress">The ip address belongs to interface, and inteface belongs to device.</param>
+/// <param name="Mask"></param>
+internal record Interface(string Name, Device Owner, IPAddress IPAddress, int Mask)
 {
-    // TODO 一个 interface 只能有一个 link 吗？
     private Link? link;
+    public string MacAddress { get; } = new Faker().Internet.Mac();
 
-    public required MacAddress MacAddress { get; set; }
-    public IPAddress? IpAddress { get; set; }
-    public required char Mask { get; set; }
-
-    public void Connect(Link link)
+    public void AddLink(Link link)
     {
         this.link = link;
     }
