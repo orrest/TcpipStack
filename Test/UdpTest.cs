@@ -103,7 +103,8 @@ public sealed class UdpTest
     [TestMethod]
     public async Task ListenMultiplePortsAndEcho()
     {
-        // Ports to listen on
+        // Use these ports to represent different processes,
+        // could also send and receive message.
         int[] ports = { 12001, 12002, 12003 };
 
         // Cancellation for test lifetime
@@ -116,8 +117,8 @@ public sealed class UdpTest
         for (int i = 0; i < ports.Length; i++)
         {
             int port = ports[i];
-            var client = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
-            listeners[i] = client;
+            var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
+            listeners[i] = server;
 
             listenerTasks[i] = Task.Run(async () =>
             {
@@ -128,7 +129,7 @@ public sealed class UdpTest
                         UdpReceiveResult received;
                         try
                         {
-                            received = await client.ReceiveAsync();
+                            received = await server.ReceiveAsync();
                         }
                         catch (ObjectDisposedException)
                         {
@@ -145,13 +146,13 @@ public sealed class UdpTest
                             string responseText = $"Echo from port {port}";
                             byte[] responseBytes = Encoding.ASCII.GetBytes(responseText);
 
-                            await client.SendAsync(responseBytes, responseBytes.Length, received.RemoteEndPoint);
+                            await server.SendAsync(responseBytes, responseBytes.Length, received.RemoteEndPoint);
                         }
                     }
                 }
                 finally
                 {
-                    client.Close();
+                    server.Close();
                 }
             }, cts.Token);
         }
@@ -160,7 +161,7 @@ public sealed class UdpTest
         await Task.Delay(100, cts.Token);
 
         // Test: send to each port and verify we get the correct echo
-        using UdpClient sender = new();
+        using UdpClient client = new();
         try
         {
             var random = new Random();
@@ -168,12 +169,12 @@ public sealed class UdpTest
             {
                 var port = ports[random.Next(0, 3)];
                 // Connect the sender to the target listening port, send one message and await reply
-                sender.Connect(IPAddress.Loopback.ToString(), port);
+                client.Connect(IPAddress.Loopback.ToString(), port);
 
                 byte[] ping = Encoding.ASCII.GetBytes($"ping:{port}");
-                await sender.SendAsync(ping, ping.Length);
+                await client.SendAsync(ping, ping.Length);
 
-                UdpReceiveResult reply = await sender.ReceiveAsync();
+                UdpReceiveResult reply = await client.ReceiveAsync();
                 string replyText = Encoding.ASCII.GetString(reply.Buffer);
 
                 Console.WriteLine($"Sent to {port}, received: {replyText}");
@@ -182,7 +183,7 @@ public sealed class UdpTest
         }
         finally
         {
-            sender.Close();
+            client.Close();
 
             // Stop all listeners
             cts.Cancel();

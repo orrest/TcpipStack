@@ -10,13 +10,13 @@ namespace TcpipStack.Models;
 /// <param name="Owner">The device.</param>
 /// <param name="IPAddress">The ip address belongs to interface, and inteface belongs to device.</param>
 /// <param name="Mask"></param>
-internal record Interface(string Name, Device Owner, IPAddress IPAddress, int Mask)
+public record Interface(string Name, Device Owner, IPAddress IPAddress, int Mask)
 {
-    private Link? link;
+    public Link? Link { get; private set; }
     public string MacAddress { get; } = new Faker().Internet.Mac();
 
     public void AddLink(Link link)
     {
-        this.link = link;
+        this.Link = link;
     }
 }
